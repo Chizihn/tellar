@@ -3,8 +3,8 @@ import { SmartAccountKit, LocalStorageAdapter } from "smart-account-kit";
 import {
   ACCOUNT_WASM_HASH,
   APP_NAME,
-  DEPLOYER_SECRET,
   NETWORK_PASSPHRASE,
+  RELAYER_URL,
   RPC_URL,
   WEBAUTHN_VERIFIER_ADDRESS,
 } from "./config";
@@ -29,7 +29,7 @@ export function getKit(): SmartAccountKit {
       accountWasmHash: ACCOUNT_WASM_HASH,
       webauthnVerifierAddress: WEBAUTHN_VERIFIER_ADDRESS,
       storage: new LocalStorageAdapter(),
-      deployerSecret: DEPLOYER_SECRET,
+      relayerUrl: RELAYER_URL,
       rpName: APP_NAME,
     });
   }

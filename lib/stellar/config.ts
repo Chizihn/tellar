@@ -25,10 +25,12 @@ export const DISPERSE_CONTRACT_ID =
 export const APP_NAME = "Tellar";
 
 /**
- * Dedicated funded deployer account secret for testnet smart account creation.
- * Required by smart-account-kit when auto-submitting deployment transactions via RPC.
+ * Our server-side relayer endpoint (app/api/relayer/route.ts) — fee-sponsors
+ * wallet creation and payment submission so users never need their own
+ * funded testnet XLM. The fee-paying secret lives in the server-only
+ * RELAYER_SECRET env var and never reaches the browser; do NOT reintroduce
+ * a deployerSecret/NEXT_PUBLIC_* secret here — see git history on this file
+ * for why (a hardcoded secret key was briefly bundled into client JS).
  */
-export const DEPLOYER_SECRET =
-  process.env.NEXT_PUBLIC_DEPLOYER_SECRET ??
-  "SCRQQ5X3GYMJWER52YCRH5XVP5LWI5AYB7K26ZE6M7SVEPR6CEUJYBZ6";
+export const RELAYER_URL = "/api/relayer";
 

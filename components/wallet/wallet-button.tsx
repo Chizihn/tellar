@@ -7,6 +7,7 @@ import {
   Copy,
   ExternalLink,
   Fingerprint,
+  History,
   Loader2,
   LogOut,
 } from "lucide-react";
@@ -22,9 +23,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useWalletStore } from "@/lib/stores/use-wallet-store";
+import { useTransactionStore } from "@/lib/stores/use-transaction-store";
 
 export function WalletButton() {
   const { status, contractId, restore, connectWallet, disconnect } = useWalletStore();
+  const { setIsOpen: openHistory } = useTransactionStore();
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -81,6 +84,13 @@ export function WalletButton() {
           >
             <ExternalLink className="size-3.5 mr-2" />
             View on Stellar.Expert
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => openHistory(true)}
+            className="cursor-pointer"
+          >
+            <History className="size-3.5 mr-2" />
+            Transaction History
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem

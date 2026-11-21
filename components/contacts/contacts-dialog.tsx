@@ -40,9 +40,9 @@ export function ContactsDialog() {
     <Dialog>
       <DialogTrigger
         render={
-          <Button variant="outline" size="sm">
-            <Users className="size-3.5" />
-            Contacts
+          <Button variant="outline" size="sm" className="gap-1.5" aria-label="Contacts">
+            <Users className="size-3.5 text-muted-foreground" />
+            <span className="hidden sm:inline">Contacts</span>
           </Button>
         }
       />

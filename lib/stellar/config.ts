@@ -4,10 +4,18 @@
  * docs/ARCHITECTURE.md for why ACCOUNT_WASM_HASH/WEBAUTHN_VERIFIER_ADDRESS
  * are the current stellar-accounts v0.8.0 testnet deployment.
  */
+/**
+ * `||` (not `??`) deliberately: an env var present-but-blank on Vercel
+ * (e.g. a dashboard entry with no value, left over from copying
+ * .env.example's bare `KEY=` lines) is `""`, which `??` treats as
+ * "set" and `||` correctly treats as "fall back". Shipped as `""` this
+ * broke the deployed site with an "insecure Soroban RPC" error, since
+ * the SDK's RPC client rejects an empty/invalid URL.
+ */
 export const RPC_URL =
-  process.env.NEXT_PUBLIC_SOROBAN_RPC_URL ?? "https://soroban-testnet.stellar.org";
+  process.env.NEXT_PUBLIC_SOROBAN_RPC_URL || "https://soroban-testnet.stellar.org";
 export const NETWORK_PASSPHRASE =
-  process.env.NEXT_PUBLIC_NETWORK_PASSPHRASE ?? "Test SDF Network ; September 2015";
+  process.env.NEXT_PUBLIC_NETWORK_PASSPHRASE || "Test SDF Network ; September 2015";
 
 export const ACCOUNT_WASM_HASH =
   "c514d35ea67eaea9bfc1fb3327854c0c06111bc1ddebd4fe217c504c1004b9e1";

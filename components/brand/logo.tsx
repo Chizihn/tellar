@@ -2,19 +2,20 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 /**
- * public/logo.svg is really a PNG wrapped in an <image> tag (not a true
- * vector) — next/image's optimizer 400s on arbitrary SVGs unless
- * `images.dangerouslyAllowSVG` is set, so this renders the PNG directly
- * instead of loosening that config for no benefit.
+ * public/logo.png is the official Tellar icon mark.
+ * On mobile viewports, the wordmark text is hidden by default so only the crisp
+ * icon mark displays, keeping the header clean and uncluttered on small screens.
  */
 export function Logo({
   className,
   iconClassName,
   showWordmark = true,
+  hideWordmarkOnMobile = true,
 }: {
   className?: string;
   iconClassName?: string;
   showWordmark?: boolean;
+  hideWordmarkOnMobile?: boolean;
 }) {
   return (
     <span className={cn("inline-flex items-center gap-2", className)}>
@@ -27,7 +28,12 @@ export function Logo({
         priority
       />
       {showWordmark && (
-        <span className="font-heading text-lg font-semibold tracking-tight">
+        <span
+          className={cn(
+            "font-heading text-lg font-semibold tracking-tight",
+            hideWordmarkOnMobile && "hidden sm:inline"
+          )}
+        >
           Tellar
         </span>
       )}

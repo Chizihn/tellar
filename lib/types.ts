@@ -35,3 +35,14 @@ export interface ChatMessage {
   plan?: Plan;
   createdAt: number;
 }
+
+export interface TransactionRecord {
+  id: string;
+  hash: string;
+  contractId: string;
+  createdAt: number;
+  plan: Plan;
+  status: "success" | "failed";
+  error?: string;
+}
+

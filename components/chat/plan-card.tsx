@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { ExternalLink, History, Loader2 } from "lucide-react";
 import { xlmToStroops } from "smart-account-kit";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import type { Plan } from "@/lib/types";
 import { useWalletStore } from "@/lib/stores/use-wallet-store";
+import { useTransactionStore } from "@/lib/stores/use-transaction-store";
 import { getKit } from "@/lib/stellar/wallet";
 import { DISPERSE_CONTRACT_ID, NATIVE_TOKEN_CONTRACT } from "@/lib/stellar/config";
 
@@ -28,7 +29,9 @@ type SubmitStatus = "idle" | "pending" | "success" | "error";
 
 export function PlanCard({ plan }: { plan: Plan }) {
   const [status, setStatus] = useState<SubmitStatus>("idle");
+  const [txHash, setTxHash] = useState<string | null>(null);
   const { status: walletStatus, contractId } = useWalletStore();
+  const { addTransaction, setIsOpen: openHistory } = useTransactionStore();
 
   async function handleConfirm() {
     if (walletStatus !== "connected" || !contractId) {
@@ -56,6 +59,16 @@ export function PlanCard({ plan }: { plan: Plan }) {
 
       if (result.success) {
         setStatus("success");
+        setTxHash(result.hash);
+
+        // Record in persistent transaction history store
+        addTransaction({
+          hash: result.hash,
+          contractId,
+          plan,
+          status: "success",
+        });
+
         toast.success("Sent — one transaction, every payment.", {
           action: {
             label: "View",
@@ -83,7 +96,12 @@ export function PlanCard({ plan }: { plan: Plan }) {
           <CardTitle className="font-heading text-base">
             {plan.payments.length}-way split
           </CardTitle>
-          <Badge variant="secondary">Testnet</Badge>
+          <Badge
+            variant={status === "success" ? "default" : "secondary"}
+            className={status === "success" ? "bg-emerald-600 hover:bg-emerald-600 text-white" : ""}
+          >
+            {status === "success" ? "Confirmed" : "Testnet"}
+          </Badge>
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -124,21 +142,49 @@ export function PlanCard({ plan }: { plan: Plan }) {
         </div>
       </CardContent>
       <CardFooter className="gap-2">
-        <Button variant="outline" className="flex-1" disabled={status === "pending"}>
-          Cancel
-        </Button>
-        <Button
-          className="flex-1"
-          onClick={handleConfirm}
-          disabled={status === "pending" || status === "success"}
-        >
-          {status === "pending" && <Loader2 className="size-4 animate-spin" />}
-          {status === "success"
-            ? "Sent"
-            : status === "pending"
-              ? "Signing…"
-              : "Confirm & sign"}
-        </Button>
+        {status === "success" ? (
+          <div className="flex w-full items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 text-xs gap-1.5"
+              onClick={() => openHistory(true)}
+            >
+              <History className="size-3.5 text-muted-foreground" />
+              View in History
+            </Button>
+            {txHash && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 text-xs gap-1.5"
+                onClick={() =>
+                  window.open(
+                    `https://stellar.expert/explorer/testnet/tx/${txHash}`,
+                    "_blank"
+                  )
+                }
+              >
+                <ExternalLink className="size-3.5 text-muted-foreground" />
+                Explorer
+              </Button>
+            )}
+          </div>
+        ) : (
+          <>
+            <Button variant="outline" className="flex-1" disabled={status === "pending"}>
+              Cancel
+            </Button>
+            <Button
+              className="flex-1"
+              onClick={handleConfirm}
+              disabled={status === "pending"}
+            >
+              {status === "pending" && <Loader2 className="size-4 animate-spin" />}
+              {status === "pending" ? "Signing…" : "Confirm & sign"}
+            </Button>
+          </>
+        )}
       </CardFooter>
     </Card>
   );

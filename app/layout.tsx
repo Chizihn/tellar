@@ -22,7 +22,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
   title: "Tellar — say it, Tellar sends it",
   description:
     "Tell Tellar a payment in plain English and it reasons out an itemized plan, shown to you before anything is signed. One passkey tap, one Stellar transaction. Testnet demo for Stellar: Build and Beyond.",

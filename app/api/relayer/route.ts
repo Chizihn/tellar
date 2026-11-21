@@ -1,3 +1,4 @@
+import { setDefaultResultOrder } from "node:dns";
 import { NextRequest, NextResponse } from "next/server";
 import {
   Keypair,
@@ -19,8 +20,30 @@ import { NETWORK_PASSPHRASE, RPC_URL } from "@/lib/stellar/config";
  * and ordinary payment submission ({xdr}).
  */
 
+// Node's fetch (undici) has been observed flaky over IPv6 against Stellar
+// RPC endpoints — see docs/ARCHITECTURE.md's "Lessons carried over from
+// eatovr-proof". Cheap, one-time fix; this API route always runs on Node.
+setDefaultResultOrder("ipv4first");
+
 const POLL_INTERVAL_MS = 1500;
 const POLL_TIMEOUT_MS = 30_000;
+const RETRY_ATTEMPTS = 3;
+const RETRY_BASE_DELAY_MS = 500;
+
+async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < RETRY_ATTEMPTS; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (attempt < RETRY_ATTEMPTS - 1) {
+        await new Promise((resolve) => setTimeout(resolve, RETRY_BASE_DELAY_MS * 2 ** attempt));
+      }
+    }
+  }
+  throw lastErr;
+}
 
 interface RelayerSuccess {
   success: true;
@@ -37,17 +60,17 @@ async function submitAndPoll(
   server: rpc.Server,
   tx: Transaction | import("@stellar/stellar-sdk").FeeBumpTransaction
 ): Promise<RelayerSuccess | RelayerFailure> {
-  const sendResult = await server.sendTransaction(tx);
+  const sendResult = await withRetry(() => server.sendTransaction(tx));
 
   if (sendResult.status === "ERROR") {
     return { success: false, error: "Submission rejected by the network.", errorCode: "ONCHAIN_FAILED" };
   }
 
   const deadline = Date.now() + POLL_TIMEOUT_MS;
-  let getResult = await server.getTransaction(sendResult.hash);
+  let getResult = await withRetry(() => server.getTransaction(sendResult.hash));
   while (getResult.status === rpc.Api.GetTransactionStatus.NOT_FOUND && Date.now() < deadline) {
     await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
-    getResult = await server.getTransaction(sendResult.hash);
+    getResult = await withRetry(() => server.getTransaction(sendResult.hash));
   }
 
   if (getResult.status === rpc.Api.GetTransactionStatus.SUCCESS) {
@@ -94,7 +117,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (typeof body.func === "string" && Array.isArray(body.auth)) {
-      const account = await server.getAccount(relayerKeypair.publicKey());
+      const account = await withRetry(() => server.getAccount(relayerKeypair.publicKey()));
       const hostFunction = xdr.HostFunction.fromXDR(body.func, "base64");
       const authEntries = (body.auth as string[]).map((entry) =>
         xdr.SorobanAuthorizationEntry.fromXDR(entry, "base64")
@@ -108,7 +131,7 @@ export async function POST(req: NextRequest) {
         .setTimeout(60)
         .build();
 
-      const simulation = await server.simulateTransaction(tx);
+      const simulation = await withRetry(() => server.simulateTransaction(tx));
       if (rpc.Api.isSimulationError(simulation)) {
         return NextResponse.json(
           { success: false, error: simulation.error, errorCode: "SIMULATION_FAILED" },

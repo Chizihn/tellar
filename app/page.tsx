@@ -6,6 +6,7 @@ import { Logo } from "@/components/brand/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { WalletButton } from "@/components/wallet/wallet-button";
 import { ContactsDialog } from "@/components/contacts/contacts-dialog";
+import { HistoryDialog } from "@/components/transactions/history-dialog";
 import { PlanCard } from "@/components/chat/plan-card";
 import { VoiceButton } from "@/components/chat/voice-button";
 import { ReceiptScanButton } from "@/components/chat/receipt-scan-button";
@@ -39,10 +40,13 @@ export default function Home() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="sticky top-0 z-10 flex items-center justify-between border-b bg-background/80 px-4 py-3 backdrop-blur">
+      <header className="sticky top-0 z-10 flex items-center justify-between border-b bg-background/80 px-3 py-2.5 sm:px-4 sm:py-3 backdrop-blur">
         <Logo />
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary">Testnet</Badge>
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <Badge variant="secondary" className="hidden xs:inline-flex text-[11px]">
+            Testnet
+          </Badge>
+          <HistoryDialog />
           <ContactsDialog />
           <WalletButton />
           <ThemeToggle />

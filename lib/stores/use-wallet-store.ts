@@ -9,17 +9,27 @@ function errorMessage(err: unknown) {
   return err instanceof Error ? err.message : String(err);
 }
 
+function requireSecureContext(): boolean {
+  if (typeof window !== "undefined" && !window.isSecureContext) {
+    toast.error("Passkeys require a secure context (HTTPS or localhost).");
+    return false;
+  }
+  return true;
+}
+
 interface WalletState {
   status: WalletStatus;
   contractId?: string;
   error?: string;
   restore: () => Promise<void>;
-  connectWallet: () => Promise<void>;
+  /** Connects to an existing passkey only — does not fall back to creating one. */
+  connectExisting: () => Promise<void>;
   createWallet: () => Promise<void>;
+  requestFunds: () => Promise<void>;
   disconnect: () => Promise<void>;
 }
 
-export const useWalletStore = create<WalletState>((set, get) => ({
+export const useWalletStore = create<WalletState>((set) => ({
   status: "idle",
 
   restore: async () => {
@@ -36,43 +46,28 @@ export const useWalletStore = create<WalletState>((set, get) => ({
     }
   },
 
-  connectWallet: async () => {
-    if (typeof window !== "undefined" && !window.isSecureContext) {
-      toast.error("Passkeys require a secure context (HTTPS or localhost).");
-      return;
-    }
+  connectExisting: async () => {
+    if (!requireSecureContext()) return;
 
     set({ status: "connecting", error: undefined });
     try {
-      // First try to authenticate existing passkey
       const result = await getKit().connectWallet({ prompt: true });
       if (result) {
         set({ status: "connected", contractId: result.contractId, error: undefined });
         toast.success("Wallet connected!");
-        return;
+      } else {
+        set({ status: "idle" });
+        toast.error("No existing passkey found for this site — create a new wallet instead.");
       }
-      // If no stored candidate, create new
-      await get().createWallet();
     } catch (err) {
       const msg = errorMessage(err);
-      if (
-        msg.toLowerCase().includes("not found") ||
-        msg.toLowerCase().includes("no credentials") ||
-        msg.toLowerCase().includes("empty")
-      ) {
-        await get().createWallet();
-      } else {
-        set({ status: "error", error: msg });
-        toast.error(msg);
-      }
+      set({ status: "idle", error: msg });
+      toast.error(msg);
     }
   },
 
   createWallet: async () => {
-    if (typeof window !== "undefined" && !window.isSecureContext) {
-      toast.error("Passkeys require a secure context (HTTPS or localhost).");
-      return;
-    }
+    if (!requireSecureContext()) return;
 
     set({ status: "creating", error: undefined });
     const toastId = toast.loading("Authorizing passkey & deploying smart account on Stellar testnet…");
@@ -94,6 +89,23 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       const msg = errorMessage(err);
       set({ status: "error", error: msg });
       toast.error(msg, { id: toastId });
+    }
+  },
+
+  requestFunds: async () => {
+    const toastId = toast.loading("Requesting testnet XLM from Friendbot…");
+    try {
+      const result = await getKit().fundWallet(NATIVE_TOKEN_CONTRACT);
+      if (result.success) {
+        toast.success(
+          result.amount ? `Funded with ${result.amount} XLM.` : "Funded via Friendbot.",
+          { id: toastId }
+        );
+      } else {
+        toast.error(result.error?.message || "Funding failed.", { id: toastId });
+      }
+    } catch (err) {
+      toast.error(errorMessage(err), { id: toastId });
     }
   },
 

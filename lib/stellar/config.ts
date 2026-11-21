@@ -5,15 +5,21 @@
  * are the current stellar-accounts v0.8.0 testnet deployment.
  */
 /**
- * `||` (not `??`) deliberately: an env var present-but-blank on Vercel
- * (e.g. a dashboard entry with no value, left over from copying
- * .env.example's bare `KEY=` lines) is `""`, which `??` treats as
- * "set" and `||` correctly treats as "fall back". Shipped as `""` this
- * broke the deployed site with an "insecure Soroban RPC" error, since
- * the SDK's RPC client rejects an empty/invalid URL.
+ * Validated, not just `||`-defaulted: an env var that's blank, missing
+ * the `https://` scheme, or otherwise malformed (e.g. a dashboard entry
+ * copy-pasted wrong on Vercel) makes the SDK's RPC client throw "Cannot
+ * connect to insecure Soroban RPC server" — this falls back to the known-
+ * good default for anything that isn't an actual https:// URL, instead of
+ * trusting the env var blindly.
  */
-export const RPC_URL =
-  process.env.NEXT_PUBLIC_SOROBAN_RPC_URL || "https://soroban-testnet.stellar.org";
+function httpsUrlOr(value: string | undefined, fallback: string): string {
+  return value && value.startsWith("https://") ? value : fallback;
+}
+
+export const RPC_URL = httpsUrlOr(
+  process.env.NEXT_PUBLIC_SOROBAN_RPC_URL,
+  "https://soroban-testnet.stellar.org"
+);
 export const NETWORK_PASSPHRASE =
   process.env.NEXT_PUBLIC_NETWORK_PASSPHRASE || "Test SDF Network ; September 2015";
 

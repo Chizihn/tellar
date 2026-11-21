@@ -126,8 +126,8 @@ export default function Home() {
                 handleSubmit();
               }
             }}
-            placeholder="split today's ₦12,000 lunch between me, Chidi, and Ada"
-            className="min-h-11 resize-none"
+            placeholder="split ₦12,000 lunch 3 ways"
+            className="min-h-11 resize-none placeholder:truncate"
             rows={1}
           />
           <Button

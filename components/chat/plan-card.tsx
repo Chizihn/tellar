@@ -25,7 +25,7 @@ function initials(name: string) {
   return name.slice(0, 2).toUpperCase();
 }
 
-type SubmitStatus = "idle" | "pending" | "success" | "error";
+type SubmitStatus = "idle" | "pending" | "success" | "error" | "cancelled";
 
 export function PlanCard({ plan }: { plan: Plan }) {
   const [status, setStatus] = useState<SubmitStatus>("idle");
@@ -100,7 +100,7 @@ export function PlanCard({ plan }: { plan: Plan }) {
             variant={status === "success" ? "default" : "secondary"}
             className={status === "success" ? "bg-emerald-600 hover:bg-emerald-600 text-white" : ""}
           >
-            {status === "success" ? "Confirmed" : "Testnet"}
+            {status === "success" ? "Confirmed" : status === "cancelled" ? "Cancelled" : "Testnet"}
           </Badge>
         </div>
       </CardHeader>
@@ -142,7 +142,11 @@ export function PlanCard({ plan }: { plan: Plan }) {
         </div>
       </CardContent>
       <CardFooter className="gap-2">
-        {status === "success" ? (
+        {status === "cancelled" ? (
+          <p className="w-full text-center text-sm text-muted-foreground">
+            Cancelled — nothing was signed or sent.
+          </p>
+        ) : status === "success" ? (
           <div className="flex w-full items-center gap-2">
             <Button
               variant="outline"
@@ -172,7 +176,12 @@ export function PlanCard({ plan }: { plan: Plan }) {
           </div>
         ) : (
           <>
-            <Button variant="outline" className="flex-1" disabled={status === "pending"}>
+            <Button
+              variant="outline"
+              className="flex-1"
+              disabled={status === "pending"}
+              onClick={() => setStatus("cancelled")}
+            >
               Cancel
             </Button>
             <Button

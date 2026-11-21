@@ -78,6 +78,12 @@ export const useWalletStore = create<WalletState>((set, get) => ({
     const toastId = toast.loading("Authorizing passkey & deploying smart account on Stellar testnet…");
     try {
       const result = await getKit().createWallet(APP_NAME, "demo-user", {
+        // Forces the browser to use this device's own biometric (Face
+        // ID / fingerprint / Windows Hello) instead of offering the
+        // cross-device "scan this QR with your phone" option — testing
+        // on a desktop without a platform authenticator will fail
+        // clearly instead of silently expecting a phone scan.
+        authenticatorSelection: { authenticatorAttachment: "platform" },
         autoSubmit: true,
         autoFund: true,
         nativeTokenContract: NATIVE_TOKEN_CONTRACT,
